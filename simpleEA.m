@@ -29,23 +29,86 @@ fitness_pop=[];% record the best fitness in current population
 %% Below starting your code
 
 % Initialise a population
-%% TODO
-
+% popsize = 4;
+popsize = 10;
+lb = 0;
+ub = 31;
+bin_len = 5;
+pop_dec = randi([lb, ub], popsize, 1);
+pop_bin = dec2bin(pop_dec);
 
 % Evaluate the initial population
-%% TODO
+pop_fitness = objective(pop_dec);
+[pop_fitness_sorted, pop_index_sorted] = sort(pop_fitness, 1, 'descend');
+fitness_pop = [fitness_pop, pop_fitness_sorted(1)];
+if pop_fitness_sorted(1) > bestSoFarFit
+    bestSoFarSolution = pop_dec(pop_index_sorted(1));
+    bestSoFarFit = pop_fitness_sorted(1);
+end
+
+nbGen = nbGen + 1;
+nbEval = nbEval + popsize;
+solution_gen = [solution_gen, bestSoFarSolution];
+fitness_gen = [fitness_gen, bestSoFarFit];
 
 % Start the loop
 while (nbEval<T) 
-% Reproduction (selection, crossver)
-%% TODO
+    % Reproduction (selection, crossver)
+    prob = pop_fitness ./ sum(pop_fitness);
+    offs_bin = [];
+    for i = 1:popsize/2
+        parent_index = [];
+        for j = 1:2
+            r = rand();
+            for pop_index = 1:popsize
+                if r>sum(prob(1:pop_index-1)) && r<=sum(prob(1:pop_index))
+                    parent_index = [parent_index, pop_index];
+                    break;
+                end
+            end
+        end
 
-% Mutation
-%% TODO
+        cross_p = randi(bin_len-1);
+        offs_bin = [offs_bin; [pop_bin(parent_index(1), 1:cross_p), pop_bin(parent_index(2), cross_p+1:end)]];
+        offs_bin = [offs_bin; [pop_bin(parent_index(2), 1:cross_p), pop_bin(parent_index(1), cross_p+1:end)]];
+    end
 
+    % Mutation
+    prob = 1 / bin_len;
+    for i = 1:popsize
+        isMutation = rand(1, bin_len) < prob;
+        offs_bin(i, isMutation) = dec2bin('1'-offs_bin(i, isMutation));
+    end
+    
+    pop_bin = offs_bin;
+    pop_dec = bin2dec(pop_bin);
+    
+    % Evaluation
+    pop_fitness = objective(pop_dec);
+    [pop_fitness_sorted, pop_index_sorted] = sort(pop_fitness, 1, 'descend');
+    fitness_pop = [fitness_pop, pop_fitness_sorted(1)];
+    if pop_fitness_sorted(1) > bestSoFarFit
+        bestSoFarSolution = pop_dec(pop_index_sorted(1));
+        bestSoFarFit = pop_fitness_sorted(1);
+    end
 
-bestSoFarFit
+    nbGen = nbGen + 1;
+    nbEval = nbEval + popsize;
+    solution_gen = [solution_gen, bestSoFarSolution];
+    fitness_gen = [fitness_gen, bestSoFarFit];
+end
+
 bestSoFarSolution
+bestSoFarFit
+
+figure, plot(1:nbGen, fitness_gen, 'b') 
+title('Fitness\_Gen')
+
+figure, plot(1:nbGen, solution_gen, 'b') 
+title('Solution\_Gen')
+
+figure, plot(1:nbGen, fitness_pop, 'b') 
+title('Fitness\_Pop')
 
 
 
